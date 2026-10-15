@@ -1,0 +1,140 @@
+---
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+
+interface Props {
+  title: string;
+  description: string;
+  tech: string[];
+  media?: string; // ruta dentro de public/, p. ej. "/assets/processor.png"
+  href?: string;
+  align?: "left" | "right";
+}
+
+const { title, description, tech, media, href, align = "left" } = Astro.props;
+
+// Si el archivo todavía no está en public/, se muestra un recuadro vacío.
+const hasMedia = Boolean(media) && existsSync(join(process.cwd(), "public", media!));
+const isVideo = hasMedia && /\.(mp4|webm)$/i.test(media!);
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const src = hasMedia ? `${base}${media}` : undefined;
+---
+
+<article class:list={["card", { right: align === "right" }]}>
+  <div class="media">
+    {
+      !hasMedia ? (
+        <div class="placeholder">Preview coming soon</div>
+      ) : isVideo ? (
+        <video src={src} autoplay muted loop playsinline aria-label={title} />
+      ) : (
+        <img src={src} alt={title} loading="lazy" />
+      )
+    }
+  </div>
+
+  <div class="text">
+    <h3>{title}</h3>
+    <p>{description}</p>
+    <ul class="tags">
+      {tech.map((t) => <li>{t}</li>)}
+    </ul>
+    {
+      href && (
+        <a class="repo" href={href} target="_blank" rel="noopener">
+          View on GitHub
+        </a>
+      )
+    }
+  </div>
+</article>
+
+<style>
+  .card {
+    display: grid;
+    /* La media ocupa más espacio que el texto. */
+    grid-template-columns: 3fr 2fr;
+    gap: 40px;
+    align-items: center;
+  }
+
+  .card.right {
+    grid-template-columns: 2fr 3fr;
+  }
+
+  .right .media {
+    order: 2;
+  }
+
+  .media img,
+  .media video,
+  .placeholder {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .placeholder {
+    aspect-ratio: 16 / 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .repo {
+    display: inline-block;
+    margin-top: 16px;
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 14px;
+  }
+
+  .repo:hover {
+    text-decoration: underline;
+  }
+
+  p {
+    color: var(--muted);
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    list-style: none;
+    padding: 0;
+    margin: 16px 0 0;
+  }
+
+  .tags li {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--surface);
+    color: var(--muted);
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+
+  @media (max-width: 720px) {
+    .card,
+    .card.right {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .right .media {
+      order: 0;
+    }
+  }
+</style>
